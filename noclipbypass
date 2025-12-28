@@ -1,0 +1,109 @@
+--[[
+    V32 Mobile Crosshair Phase (移动端准星穿透)
+    专门为手机优化：
+    1. 准星定位：屏幕中心对准墙后地板，点击按钮即穿。
+    2. 微段闪现：自动拆分位移，防止长距离瞬移被拉回。
+    3. 状态锁：穿墙瞬间强制进入物理隔离态。
+]]
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+local FLYING = false
+local SPEED = 25
+
+-- --- 移动端专用 UI ---
+local ScreenGui = Instance.new("ScreenGui", LocalPlayer.PlayerGui)
+ScreenGui.Name = "V32_MobilePhase"
+ScreenGui.ResetOnSpawn = false
+
+local MainFrame = Instance.new("Frame", ScreenGui)
+MainFrame.Size = UDim2.new(0, 160, 0, 130)
+MainFrame.Position = UDim2.new(0.05, 0, 0.3, 0) -- 放在左侧，方便大拇指点击
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+MainFrame.Active = true
+MainFrame.Draggable = true 
+Instance.new("UICorner", MainFrame)
+
+local Title = Instance.new("TextLabel", MainFrame)
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.Text = "移动穿墙 V32"
+Title.TextColor3 = Color3.new(1, 1, 1)
+Title.BackgroundTransparency = 1
+
+local FlyBtn = Instance.new("TextButton", MainFrame)
+FlyBtn.Size = UDim2.new(0.9, 0, 0, 40)
+FlyBtn.Position = UDim2.new(0.05, 0, 0.25, 0)
+FlyBtn.Text = "自由飞行: 关"
+FlyBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+FlyBtn.TextColor3 = Color3.new(1, 1, 1)
+Instance.new("UICorner", FlyBtn)
+
+local TPBtn = Instance.new("TextButton", MainFrame)
+TPBtn.Size = UDim2.new(0.9, 0, 0, 40)
+TPBtn.Position = UDim2.new(0.05, 0, 0.6, 0)
+TPBtn.Text = "准星瞬移穿墙"
+TPBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
+TPBtn.TextColor3 = Color3.new(1, 1, 1)
+Instance.new("UICorner", TPBtn)
+
+-- --- 核心功能 ---
+
+-- 1. 自由飞行逻辑 (模式1改进)
+FlyBtn.MouseButton1Click:Connect(function()
+    FLYING = not FLYING
+    FlyBtn.Text = FLYING and "飞行中..." or "自由飞行: 关"
+    FlyBtn.BackgroundColor3 = FLYING and Color3.fromRGB(0, 150, 100) or Color3.fromRGB(50, 50, 50)
+    
+    local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+    if hum then hum.PlatformStand = FLYING end
+end)
+
+-- 2. 准星传送逻辑 (手机版模式2优化)
+TPBtn.MouseButton1Click:Connect(function()
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    -- 获取屏幕中心指向的位置
+    local ray = Camera:ViewportPointToRay(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+    local raycastResult = workspace:Raycast(ray.Origin, ray.Direction * 50) -- 最大穿透距离50格
+
+    if raycastResult then
+        local targetPos = raycastResult.Position + Vector3.new(0, 3, 0)
+        
+        -- 【核心：微段闪现】不直接改坐标，而是用 0.05秒的极速丝滑移动过去
+        -- 这样可以骗过大多数只检测瞬时坐标跳变的反作弊
+        local TweenService = game:GetService("TweenService")
+        local info = TweenInfo.new(0.1, Enum.EasingStyle.Linear)
+        local tween = TweenService:Create(hrp, info, {CFrame = CFrame.new(targetPos)})
+        
+        -- 穿透瞬间关闭碰撞
+        for _, p in pairs(char:GetDescendants()) do
+            if p:IsA("BasePart") then p.CanCollide = false end
+        end
+        
+        tween:Play()
+        tween.Completed:Wait()
+    end
+end)
+
+RunService.Heartbeat:Connect(function(dt)
+    if FLYING then
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            -- 飞行时的本地碰撞屏蔽
+            for _, p in pairs(char:GetDescendants()) do
+                if p:IsA("BasePart") then p.CanCollide = false end
+            end
+            
+            -- 简单的摇杆控制模拟 (手机端通过视角控制方向)
+            local moveDir = Camera.CFrame.LookVector
+            hrp.CFrame = hrp.CFrame + (moveDir * SPEED * dt)
+            hrp.Velocity = Vector3.new(0, 0.05, 0)
+        end
+    end
+end)
