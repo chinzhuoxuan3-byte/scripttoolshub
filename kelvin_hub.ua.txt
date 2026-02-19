@@ -533,8 +533,8 @@ aboutTab = InSection:Tab({
     Locked = false,
 })
 Paragraph1 = aboutTab:Paragraph({
-    Title = gradient("Sky hub", Color3.fromHex("#6A11CB"), Color3.fromHex("#2575FC")),
-    Desc = "此脚本为缝合脚本，如有任何问题和建议可联系作者，禁止拿本脚本圈钱",
+    Title = gradient("Kelvin hub", Color3.fromHex("#6A11CB"), Color3.fromHex("#2575FC")),
+    Desc = "此脚本已经被开源，如有任何问题和建议可联系作者，快拿本脚本圈钱",
     Thumbnail = "rbxassetid://112344687181395",
     ThumbnailSize = 120,
     Locked = false,
@@ -5921,3 +5921,4 @@ end)
 for _,dick in pairs({"rconsoleprint","rconsolewarn","rconsoleinfo","rconsoleerr","rconsoletitle","clonefunction"})do
     getgenv()[dick]=nil
 end
+
