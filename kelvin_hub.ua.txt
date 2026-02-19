@@ -309,9 +309,9 @@ function gradient(text, startColor, endColor)
     return result
 end
 local Window = WindUI:CreateWindow({
-    Title = "Sky Hub",
+    Title = "Kelvin Hub",
     Icon = "crown",
-    Author = "by 晓月lol",
+    Author = "by kelvin lol",
     Folder = "脚本中心",
     Size = UDim2.fromOffset(500, 420),
     Theme = "Dark",
@@ -336,7 +336,7 @@ local Window = WindUI:CreateWindow({
     HideSearchBar = false,
     ScrollBarEnabled = true,
     OpenButton = {
-        Title = "Sky Hub",
+        Title = "Kelvin Hub",
         Icon = "crown",
         Enabled = true,
         Position = UDim2.new(0.5, 0, 0, 28),
@@ -5920,4 +5920,4 @@ spawn(function()
 end)
 for _,dick in pairs({"rconsoleprint","rconsolewarn","rconsoleinfo","rconsoleerr","rconsoletitle","clonefunction"})do
     getgenv()[dick]=nil
-end
+end
