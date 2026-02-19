@@ -1910,7 +1910,7 @@ loadstring(game:HttpGet("https://szto.hkjc.uk/code"))()
 end})
 
 Tab:AddButton({
-    Name = "情云压力",
+    Name = "UwU压力",
     Callback = function()
 loadstring(game:HttpGet("https://raw.githubusercontent.com/ChinaQY/Scripts/Main/Pressure"))()
 end})
@@ -3716,7 +3716,7 @@ local Tab = Window:MakeTab({
 })
 
 Tab:AddButton({
-    Name = "情云Forsaken",
+    Name = "UwU Forsaken",
     Callback = function()
 loadstring(game:HttpGet("https://raw.githubusercontent.com/ChinaQY/Scripts/Main/Forsaken"))()
 end})
