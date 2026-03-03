@@ -1,0 +1,151 @@
+local repo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
+local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
+local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
+local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
+
+local Window = Library:CreateWindow({
+	Title = "顺天县",
+	Footer = "Yeskid",
+	Icon = 9,
+	NotifySide = "Right",
+	ShowCustomCursor = true,
+})
+
+local Tabs = {
+	Main = Window:AddTab("Main", "user"),
+	["UI Settings"] = Window:AddTab("UI Settings", "settings"),
+}
+
+local MainGroup = Tabs.Main:AddLeftGroupbox("战斗功能")
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local LocalPlayer = Players.LocalPlayer
+local MeleeEvent = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Events"):WaitForChild("Melee_Main")
+
+local Toggles = {
+    Killaura = false,
+    StickyTP = false
+}
+
+local Config = {
+    Range = 20,
+    Delay = 100,
+    Offset = 0
+}
+
+local LastAttack = 0
+
+local function isProtected(char)
+    return char:FindFirstChild("ForceField") ~= nil
+end
+
+local function getClosestPlayer()
+    local closest = nil
+    local shortestDistance = Config.Range
+
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("Humanoid") then
+            if player.Character.Humanoid.Health > 0 and not isProtected(player.Character) then
+                local distance = (LocalPlayer.Character.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
+                if distance < shortestDistance then
+                    closest = player
+                    shortestDistance = distance
+                end
+            end
+        end
+    end
+    return closest
+end
+
+local function attackPlayer(target)
+    local tool = LocalPlayer.Character:FindFirstChildOfClass("Tool")
+    if not tool then return end
+
+    local swingArgs = {{ Action = "Swing", Tool = tool }}
+    MeleeEvent:FireServer(unpack(swingArgs))
+
+    local hitArgs = {
+        {
+            Humanoid = target.Character.Humanoid,
+            Finishing = false,
+            Action = "Hit",
+            Hit = target.Character:FindFirstChild("Left Arm") or target.Character:FindFirstChild("UpperTorso") or target.Character.PrimaryPart,
+            Tool = tool,
+            RayPosition = target.Character.PrimaryPart.Position,
+            Dismemberment = { "Amputate" },
+            RayNormal = Vector3.new(-0.02, 0.25, -0.96)
+        }
+    }
+    MeleeEvent:FireServer(unpack(hitArgs))
+end
+
+MainGroup:AddToggle("Killaura", {
+    Text = "杀戮光环（全武器除枪外）",
+    Default = false,
+    Callback = function(Value) Toggles.Killaura = Value end
+})
+
+MainGroup:AddToggle("StickyTP", {
+    Text = "贴身传送",
+    Default = false,
+    Callback = function(Value) Toggles.StickyTP = Value end
+})
+
+MainGroup:AddSlider("Delay", {
+    Text = "攻击速度",
+    Default = 100,
+    Min = 0,
+    Max = 500,
+    Rounding = 0,
+    Callback = function(Value) Config.Delay = Value end
+})
+
+MainGroup:AddSlider("Offset", {
+    Text = "传送角度",
+    Default = 0,
+    Min = -5,
+    Max = 5,
+    Rounding = 1,
+    Callback = function(Value) Config.Offset = Value end
+})
+
+RunService.Heartbeat:Connect(function()
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local myHrp = LocalPlayer.Character.HumanoidRootPart
+        local target = getClosestPlayer()
+        
+        if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+            local targetHrp = target.Character.HumanoidRootPart
+            local targetHum = target.Character:FindFirstChildOfClass("Humanoid")
+            
+            if targetHum and targetHum.Health > 0 and not isProtected(target.Character) then
+                if Toggles.StickyTP then
+                    myHrp.CFrame = targetHrp.CFrame * CFrame.new(0, 0, Config.Offset)
+                    myHrp.Velocity = Vector3.new(0, 0, 0)
+                    myHrp.RotVelocity = Vector3.new(0, 0, 0)
+                end
+                
+                if Toggles.Killaura and (tick() - LastAttack >= (Config.Delay / 1000)) then
+                    attackPlayer(target)
+                    LastAttack = tick()
+                end
+            end
+        end
+    end
+end)
+
+local MenuGroup = Tabs["UI Settings"]:AddLeftGroupbox("Menu", "wrench")
+MenuGroup:AddLabel("Menu bind"):AddKeyPicker("MenuKeybind", { Default = "RightShift", NoUI = true, Text = "Menu keybind" })
+MenuGroup:AddButton("Unload", function() Library:Unload() end)
+
+Library.ToggleKeybind = Library.Options.MenuKeybind 
+SaveManager:SetLibrary(Library)
+SaveManager:BuildConfigSection(Tabs["UI Settings"])
+ThemeManager:SetLibrary(Library)
+ThemeManager:ApplyToTab(Tabs["UI Settings"])
+
+Library:OnUnload(function()
+	print("Unloaded!")
+end)
